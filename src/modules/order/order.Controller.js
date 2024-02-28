@@ -156,16 +156,14 @@ export const webhook = asyncHandler(async (req, res) => {
   }
 
   // Handle the event
-  const { orderId } = event.data.object.metadata;
-  console.log(orderId);
+  const { order } = event.data.object.metadata;
+  // console.log(orderId);
   if (event.type != "checkout.session.completed") {
-    await orderModel.findOneAndUpdate({ _id: orderId }, { status: "cancelled" });
+    await orderModel.findOneAndUpdate({ _id: order }, { status: "cancelled" });
     return res.status(400).json({ msg: "failed" });
   }else{
-    await orderModel.findOneAndUpdate({ _id: orderId }, { status: "placed" });
+    await orderModel.findOneAndUpdate({ _id: order }, { status: "placed" });
     return res.status(202 ).json({ msg: "done" });
   }
 
-  // Return a 200 res to acknowledge receipt of the event
-  res.send();
 });
