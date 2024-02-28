@@ -50,7 +50,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       _id: product.productId,
       stock: { $gte: product.quantity },
     });
-    console.log(findProduct, product.quantity, product.productId);
+    // console.log(findProduct, product.quantity, product.productId);
     if (!findProduct) {
       return next(
         new AppError("can't find this product or quantity is not enough", 401)
@@ -104,7 +104,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     if (req.body.coupon) {
       const coupon = await stripe.coupons.create({percent_off:req.body.coupon.couponAmount,duration:"once"})
       req.body.couponId= coupon.id
-      console.log(coupon);
+      // console.log(coupon);
     }
     const session = await payment({
       stripe,
