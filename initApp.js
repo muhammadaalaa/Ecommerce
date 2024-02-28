@@ -26,10 +26,10 @@ export const initApp = (app, express) => {
     app.use(morgan("dev"));
   }
   app.use(cors());
-  app.use(express.json());
   app.get("/", (req, res, next) => {
     res.status(201).json({ msg: "welcome to ECommerce" });
   });
+  app.use(express.json());
   app.use("/auth", authRoutes);
   app.use("/users", userRoutes);
   app.use("/category", categoryRoutes);
