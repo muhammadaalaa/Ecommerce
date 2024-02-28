@@ -97,5 +97,39 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       { $inc: { stock: -product.quantity } }
     );
   }
+  if (paymentMethod=="card"){
+    const stripe = new Stripe(process.env.stripe_key)
+    if (req.body.coupon) {
+      const coupon = await stripe.coupons.create({percent_off:req.body.coupon.couponAmount,duration:"once"})
+      req.body.couponId= coupon.id
+      console.log(coupon);
+    }
+    const session = await payment({
+      stripe,
+      payment_method_types: ["card"],
+      mode:"payment",
+      customer_email:req.user.email,
+      metadata:{
+        order:order._id.toString()
+      },
+      success_url:`${req.protocol}://${req.headers.host}/orders/success`,
+      cancel_url:`${req.protocol}://${req.headers.host}/orders/cancel`,
+      line_items:order.products.map((product)=>{
+        return { 
+          price_data:{
+            currency:"usd",
+            product_data:{
+                name:product.title,
+            },
+            unit_amount:product.price*100
+          },
+          quantity:product.quantity
+        }
+  
+      }),
+      discounts:req.body.couponId?[{coupon:req.body.couponId}]:[]
+    })
+    return res.json({ msg: "Done", order,url :session.url });
+  }
   return res.json({ msg: "Done", order });
 });
