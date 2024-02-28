@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { validation } from "../../middleware/validation.js";
 import { validRoles } from "../../utils/validRoles.js";
+import  express  from "express";
 import * as OV from "./order.Validation.js";
 import * as OC from "./order.Controller.js";
 import { auth } from "../../middleware/auth.js";
@@ -11,4 +12,9 @@ router.post(
   validation(OV.createOrder),
   OC.createOrder
 );
+
+
+router.post('/webhook', express.raw({type: 'application/json'}), OC.webhook);
+
+
 export default router;

@@ -99,39 +99,72 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       { $inc: { stock: -product.quantity } }
     );
   }
-  if (paymentMethod=="card"){
-    const stripe = new Stripe(process.env.stripe_key)
+  if (paymentMethod == "card") {
+    const stripe = new Stripe(process.env.stripe_key);
     if (req.body.coupon) {
-      const coupon = await stripe.coupons.create({percent_off:req.body.coupon.couponAmount,duration:"once"})
-      req.body.couponId= coupon.id
+      const coupon = await stripe.coupons.create({
+        percent_off: req.body.coupon.couponAmount,
+        duration: "once",
+      });
+      req.body.couponId = coupon.id;
       // console.log(coupon);
     }
     const session = await payment({
       stripe,
       payment_method_types: ["card"],
-      mode:"payment",
-      customer_email:req.user.email,
-      metadata:{
-        order:order._id.toString()
+      mode: "payment",
+      customer_email: req.user.email,
+      metadata: {
+        order: order._id.toString(),
       },
-      success_url:`${req.protocol}://${req.headers.host}/orders/success`,
-      cancel_url:`${req.protocol}://${req.headers.host}/orders/cancel`,
-      line_items:order.products.map((product)=>{
-        return { 
-          price_data:{
-            currency:"usd",
-            product_data:{
-                name:product.title,
+      success_url: `${req.protocol}://${req.headers.host}/orders/success`,
+      cancel_url: `${req.protocol}://${req.headers.host}/orders/cancel`,
+      line_items: order.products.map((product) => {
+        return {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: product.title,
             },
-            unit_amount:product.price*100
+            unit_amount: product.price * 100,
           },
-          quantity:product.quantity
-        }
-  
+          quantity: product.quantity,
+        };
       }),
-      discounts:req.body.couponId?[{coupon:req.body.couponId}]:[]
-    })
-    return res.json({ msg: "Done", order,url :session.url });
+      discounts: req.body.couponId ? [{ coupon: req.body.couponId }] : [],
+    });
+    return res.json({ msg: "Done", order, url: session.url });
   }
   return res.json({ msg: "Done", order });
+});
+//---------------------------------------------------------
+export const webhook = asyncHandler(async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+
+  let event;
+  const stripe = new Stripe(process.env.stripe_key);
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.endpointSecret
+    );
+  } catch (err) {
+    res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+  // Handle the event
+  const { orderId } = event.data.object.metadata;
+  if (event.type != "checkout.session.completed") {
+    await orderModel.updateOne({ _id: orderId }, { status: "cancelled" });
+    return res.status(400).json({ msg: "failed" });
+  }else{
+    await orderModel.updateOne({ _id: orderId }, { status: "placed" });
+    return res.status(202 ).json({ msg: "done" });
+  }
+
+  // Return a 200 res to acknowledge receipt of the event
+  res.send();
 });

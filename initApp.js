@@ -29,7 +29,13 @@ export const initApp = (app, express) => {
   app.get("/", (req, res, next) => {
     res.status(201).json({ msg: "welcome to ECommerce" });
   });
-  app.use(express.json());
+  app.use((req,res,next)=>{
+    if (req.originalUrl == "/orders/webhook") {
+      next()
+    }else{
+      express.json()(req,res,next)
+    }
+  });
   app.use("/auth", authRoutes);
   app.use("/users", userRoutes);
   app.use("/category", categoryRoutes);
