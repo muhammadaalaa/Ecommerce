@@ -3,6 +3,8 @@ import cartModel from "../../../DB/models/cartCollection.js";
 import couponModel from "../../../DB/models/couponCollection.js";
 import orderModel from "../../../DB/models/orderCollection.js";
 import { AppError, asyncHandler } from "../../utils/HandlingError.js";
+import Stripe from "stripe";
+import payment from "../../utils/payment.js";
 //************************createOrder************************* */
 export const createOrder = asyncHandler(async (req, res, next) => {
   const { address, phoneNumber, paymentMethod } = req.body;

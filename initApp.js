@@ -27,7 +27,7 @@ export const initApp = (app, express) => {
   }
   app.use(cors());
   app.use(express.json());
-  app.use("/", (req, res, next) => {
+  app.get("/", (req, res, next) => {
     res.status(201).json({ msg: "welcome to ECommerce" });
   });
   app.use("/auth", authRoutes);
@@ -44,7 +44,7 @@ export const initApp = (app, express) => {
     res.json({ msg: "done" });
   });
   dbConnection();
-  app.use("*", RH.RoutingHandler);
+  app.use("/*", RH.RoutingHandler);
   app.use(
     RH.globalErrorHandling,
     rollBackDeleteFormCloud,
