@@ -5,6 +5,7 @@ import orderModel from "../../../DB/models/orderCollection.js";
 import { AppError, asyncHandler } from "../../utils/HandlingError.js";
 import Stripe from "stripe";
 import payment from "../../utils/payment.js";
+import { createInvoice } from "../../utils/pdf.js";
 //************************createOrder************************* */
 export const createOrder = asyncHandler(async (req, res, next) => {
   const { address, phoneNumber, paymentMethod } = req.body;
@@ -99,6 +100,25 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       { $inc: { stock: -product.quantity } }
     );
   }
+
+  const invoice = {
+    shipping: {
+      name: req.user.name,
+      address: req.user.address,
+      city: "cairo",
+      state: "CAIRO",
+      country: "EGYPT",
+      postal_code: 94111,
+    },
+    items: order.products,
+    subtotal: order.subTotal,
+    paid: order.totalPrice,
+    coupon: req?.body?.coupon?.couponAmount,
+    invoice_nr: order._id,
+    Date: order.createdAt,
+  };
+
+  await createInvoice(invoice, "invoice.pdf");
   if (paymentMethod == "card") {
     const stripe = new Stripe(process.env.stripe_key);
     if (req.body.coupon) {
@@ -137,7 +157,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
   }
   return res.json({ msg: "Done", order });
 });
-//---------------------------------------------------------
+//************************************webhook************************************************** */
 export const webhook = asyncHandler(async (req, res) => {
   const sig = req.headers["stripe-signature"];
 
@@ -161,9 +181,46 @@ export const webhook = asyncHandler(async (req, res) => {
   if (event.type != "checkout.session.completed") {
     await orderModel.findOneAndUpdate({ _id: order }, { status: "cancelled" });
     return res.status(400).json({ msg: "failed" });
-  }else{
+  } else {
     await orderModel.findOneAndUpdate({ _id: order }, { status: "placed" });
-    return res.status(202 ).json({ msg: "done" });
+    return res.status(202).json({ msg: "done" });
+  }
+});
+//*****************************cancel order******************************************** */
+export const cancelOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const { reason } = req.body;
+  const order = await orderModel.findOne({ _id: orderId });
+  if (!order) {
+    return res.status(404).json({ msg: "invalid order id" });
+  }
+  if (order.status == "canceled") {
+    return res.status(404).json({ msg: "order is just cncelled" });
   }
 
+  if (
+    (order.status == "placed" && order.paymentMethod == "cash") ||
+    (order.status == "waitPayment" && order.paymentMethod == "card")
+  ) {
+    return res.status(400).json({ msg: "can't cancel this order" });
+  }
+  const cancelOrder = await orderModel.updateOne(
+    { _id: order._id },
+    { status: "canceled", cancelledBy: req.user_id ,reason }
+  );
+  if (!cancelOrder) {
+    return res.status(404).json({ msg: "can't cancel this order" });
+  }
+  if (order.couponId) {
+    await couponModel.updateOne(
+      { _id: order.couponId },
+      { $pull: { usersUsedThisCoupon: req.user._id } }
+    );
+  }
+  for (const product of order.products) {
+    await productModel.updateOne({_id:product.productId},{$inc:{stock:product.quantity}});
+  }
+   await orderModel.deleteOne({_id:order._id})
+    return res.status(200).json({ msg: "done" });
+  
 });

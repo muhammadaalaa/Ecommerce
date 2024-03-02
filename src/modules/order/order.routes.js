@@ -12,6 +12,11 @@ router.post(
   validation(OV.createOrder),
   OC.createOrder
 );
+router.post(
+  "/cancelOrder/:orderId",
+  auth(validRoles.Admin),
+  OC.cancelOrder
+);
 
 
 router.post('/webhook', express.raw({type: 'application/json'}), OC.webhook);

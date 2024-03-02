@@ -58,9 +58,9 @@ const orderSchema = new Schema(
       enum: ["placed", "waitPayment", "delivered", "cancelled"],
       default: "pending",
     },
-    cancelled: {
-      type: Boolean,
-      default: false,
+    cancelledBy: {
+      type: Types.ObjectId,
+      ref: "user",
     },
     updatedAt: {
       type: Date,
