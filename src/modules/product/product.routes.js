@@ -8,6 +8,10 @@ import * as PC from "./product.Controller.js";
 import { auth } from "../../middleware/auth.js";
 //==>> merge params// const router = Router({ mergeParams: true }); //==>> url will be like   localhost:3000/category/categoryId/SubCategory/any api
 const router = Router();
+router.get(
+  "/",
+  PC.Product
+);
 router.post(
   "/createProduct",
   validation(headers.headers),
@@ -23,7 +27,7 @@ router.patch(
   PC.addToWishList
 );
 router.get(
-  "/",
+  "/handling",
   PC.handlingProduct
 );
 router.patch(

@@ -166,6 +166,14 @@ export const addToWishList = asyncHandler(async (req, res, next) => {
     ? res.status(200).json({ msg: "done", addProductToWishList })
     : next(new AppError("can't  ", 400));
 });
+//*************************************product ****************************** */
+export const product = asyncHandler(async (req, res, next) => {
+  const productCheck = await productModel.find();
+  if (!productCheck) {
+    return next(new AppError("can't find this product ", 404));
+  }
+  res.status(200).json({ msg: "done", addProductToWishList });
+});
 //*************************************wishList ****************************** */
 export const removeFromWishList = asyncHandler(async (req, res, next) => {
   const { productId } = req.params;
@@ -192,13 +200,11 @@ export const handlingProduct = asyncHandler(async (req, res, next) => {
   let apiFeatures = new ApiFeatures(productModel.find(), req.query)
     .paginate()
     .select()
-    .search()
-    .sort()
-    .filter();
+    .search();
+  // .sort()
+  // .filter();
 
   const product = await apiFeatures.mongooseQuery;
-  
+
   res.status(200).json({ msg: "done", product });
 });
-
-
