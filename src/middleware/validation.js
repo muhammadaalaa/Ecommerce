@@ -63,6 +63,14 @@ export const validation = (Schema) => {
     if (Errors.length) {
       return res.status(400).json({ err: Errors });
     }
-    next(); 
+    next();
   };
+};
+export const graphQLValidation = (Schema, data) => {
+  let Errors = [];
+  // let arr2 = [];
+
+  const { error } = Schema.validate(data, { abortEarly: false });
+  if (error?.details) 
+  throw new Error(error)
 };

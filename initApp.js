@@ -18,7 +18,19 @@ import morgan from "morgan";
 import chalk from "chalk";
 import cors from "cors";
 import { rollBackDeleteFormCloud } from "./src/utils/rollBackDeleteFormCloud.js";
+import { createHandler } from "graphql-http/lib/use/express";
 import { rollBackDeleteFormDB } from "./src/utils/rollBackDeleteFormBD.js";
+import playGround from"graphql-playground-middleware-express";
+const expressPlayground = playGround.default
+import {
+  GraphQLID,
+  GraphQLList,
+  GraphQLObjectType,
+  GraphQLSchema,
+  GraphQLString,
+} from "graphql";
+import productModel from "./DB/models/productCollection.js";
+import { productSchema } from "./src/modules/product/graphQL/schema.js";
 dotenv.config({ path: path.resolve("config/.env") });
 export const initApp = (app, express) => {
   const port = process.env.port || 3001;
@@ -29,11 +41,11 @@ export const initApp = (app, express) => {
   app.get("/", (req, res, next) => {
     res.status(201).json({ msg: "welcome to ECommerce" });
   });
-  app.use((req,res,next)=>{
+  app.use((req, res, next) => {
     if (req.originalUrl == "/orders/webhook") {
-      next()
-    }else{
-      express.json()(req,res,next)
+      next();
+    } else {
+      express.json()(req, res, next);
     }
   });
   app.use("/auth", authRoutes);
@@ -50,12 +62,19 @@ export const initApp = (app, express) => {
     res.json({ msg: "done" });
   });
   dbConnection();
+
+  const schema = productSchema
+
+  app.use("/graphql", createHandler({ schema }));
+app.get("/playground", expressPlayground({ endpoint: "/graphql" }));
+
   app.use("/*", RH.RoutingHandler);
   app.use(
     RH.globalErrorHandling,
     rollBackDeleteFormCloud,
     rollBackDeleteFormDB
   );
+
   app.listen(port, () =>
     console.log(chalk.bgBlue(`app listening on port ${port}!`))
   );

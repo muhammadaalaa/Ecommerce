@@ -31,3 +31,9 @@ export const removeFromWishList = {
   headers: headers.headers
 };
 // name, categoryId, subCategoryId, id
+//=====================================================================
+export const updateProductQL =  joi.object().required().keys({
+    id: generalFiled.id.required(),
+    price: joi.number().integer().positive().required(),
+    token:joi.string().required()
+  })
